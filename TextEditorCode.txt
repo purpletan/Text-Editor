@@ -1,0 +1,1208 @@
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
+import java.awt.GridLayout;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Arc2D;
+import java.awt.geom.CubicCurve2D;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.QuadCurve2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Vector;
+
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledEditorKit.FontFamilyAction;
+import javax.swing.text.StyledEditorKit.FontSizeAction;
+
+
+public class Editorr extends Box implements ActionListener {
+     
+      private JToolBar toolbar = new JToolBar();
+      private JPanel main = new JPanel();
+      private static final int EDIT_ROWS = 20;
+      private static final int EDIT_COLS = 40;
+      final Color  HILIT_COLOR = Color.LIGHT_GRAY;
+      private static final int NUM_CHARS = 15;
+      Dimension preferredSize = new Dimension(1000,400);
+      
+     
+     
+                                         // The editing area.
+    private static JTextArea editor;
+    private JTextArea t;
+    static JFrame frame = new JFrame();
+  
+    //swing components dealing with load,save,and various shapes
+    private JButton loadButton;
+    private JButton saveButton;
+    private JButton circButton;
+    private JButton rectButton;
+    private JButton squareButton;
+    private JButton ovalButton;
+    private JButton roundrectButton;
+    private JButton majorsector;
+    private JButton minorsector;
+    private JFileChooser chooser = new JFileChooser();
+ 
+    // The Swing components dealing with searching
+    private JButton searchButton;
+    private JTextField searchField;
+  
+     MenuBar mbar;
+     Menu format,font,font1,font2;
+     MenuItem fname1,fname2,fname3,fname4;
+     MenuItem fcase1,fcase2;
+     MenuItem fsize1,fsize2,fsize3,fsize4;
+ 
+    Font f;
+    String command=" ";
+  
+    // The Swing components dealing with replace,cut,copy,paste,count
+    
+    private JButton replaceAllButton;
+    private JButton replaceSelectionButton;
+    private JButton cut;
+    private JButton copy;
+    private JButton paste;
+    private JButton count;
+ 
+ 
+    private JFileChooser dialog = new JFileChooser(System.getProperty("user.dir"));
+    private JTextField replaceField;
+    JPanel replacePanel = new JPanel();
+
+    
+    private static final String DEFAULT_FONT_FAMILY = "SansSerif";
+    private static final int DEFAULT_FONT_SIZE = 18;
+
+  
+  
+    public Editorr() {
+        super(BoxLayout.X_AXIS);
+        
+        // This is the editing area and is scrollable
+      
+        editor = new JTextArea (EDIT_ROWS, EDIT_COLS);
+        t=new JTextArea("                                                                         ");
+  
+        JScrollPane editorScroller = new JScrollPane (editor);
+        editorScroller.setBorder(BorderFactory.createTitledBorder ("Edit Area"));
+        JFrame frame = new JFrame();
+        Container contentPane = frame.getContentPane();
+        contentPane.add (editorScroller, BorderLayout.CENTER);
+        mbar=new MenuBar();
+        frame.setMenuBar(mbar);
+        format=new Menu("FORMAT");
+        font=new Menu("Font");
+        font1=new Menu("Case");
+        font2=new Menu("Size");
+        ;
+      
+        // components dealing with search
+      
+        searchButton = new JButton ("Search");
+        searchButton.addActionListener (this);
+        searchField = new JTextField (NUM_CHARS);
+        replaceField = new JTextField (NUM_CHARS);
+  
+        // components dealing with replace
+      
+        replaceAllButton = new JButton ("Replace all");
+        replaceAllButton.addActionListener (this);
+        replaceSelectionButton = new JButton ("Replace selection");
+        replaceSelectionButton.addActionListener (this);
+        
+      
+        Action actions[] = replaceField.getActions();
+        Action cutAction = findAction(actions, DefaultEditorKit.cutAction);
+        Action copyAction = findAction(actions, DefaultEditorKit.copyAction);
+        Action pasteAction = findAction(actions, DefaultEditorKit.pasteAction);
+      
+        cut = new JButton(cutAction);
+        cut.setText("Cut");
+        replacePanel.add(cut);
+        copy= new JButton(copyAction);
+        copy.setText("Copy");
+        replacePanel.add(copy);
+        paste = new JButton(pasteAction);
+        paste.setText("Paste");
+        replacePanel.add(paste);
+        
+        JPanel searchPanel = new JPanel();
+        replacePanel.add (searchButton);
+        replacePanel.add (replaceAllButton);
+        replacePanel.add (replaceSelectionButton);
+        replacePanel.add (replaceField);
+      
+        count=new JButton("Count");
+        count.addActionListener(this);
+        replacePanel.add(count);
+        replacePanel.add(t);
+  
+  
+  
+        format.add(font);
+        format.add(font1);
+        format.add(font2);
+    
+    
+        font.add(fname1=new MenuItem("Courier"));
+        font.add(fname2=new MenuItem("Monotype Corsiva"));
+        font.add(fname3=new MenuItem("Monospaced"));
+        font.add(fname4=new MenuItem("Aerial"));
+
+        font1.add(fcase1=new MenuItem("Lowercase"));
+        font1.add(fcase2=new MenuItem("Uppercase"));
+
+        font2.add(fsize1=new MenuItem("12"));
+        font2.add(fsize2=new MenuItem("14"));
+        font2.add(fsize3=new MenuItem("18"));
+        font2.add(fsize4=new MenuItem("20"));
+         mbar.add(format);
+ 
+       
+       
+        loadButton = new JButton ("Load file");
+        loadButton.addActionListener (this);
+        saveButton = new JButton ("Save file");
+        saveButton.addActionListener (this);
+        rectButton=new JButton("Rectangle");
+        rectButton.addActionListener(this);
+        circButton = new JButton("Circle");
+        circButton.addActionListener(this);
+        ovalButton = new JButton("Oval");
+        ovalButton.addActionListener(this);
+        roundrectButton = new JButton("RoundRectangle");
+        roundrectButton.addActionListener(this);
+        squareButton = new JButton("Square");
+        squareButton.addActionListener(this);
+        majorsector = new JButton("MajorSector");
+        majorsector.addActionListener(this);
+        minorsector = new JButton("MinorSector");
+        minorsector.addActionListener(this);
+    
+   
+      
+        JPanel filePanel = new JPanel();
+        filePanel.add(rectButton);
+        filePanel.add(squareButton);
+        filePanel.add(circButton);
+        filePanel.add(ovalButton);
+        filePanel.add(roundrectButton);
+        filePanel.add(majorsector);
+        filePanel.add(minorsector);
+                
+        JPanel p=new JPanel();
+        p.add(loadButton);
+        p.add(saveButton);
+  
+        
+      
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout (new GridLayout (0, 1));
+        buttonPanel.add (searchPanel);
+        buttonPanel.add (replacePanel);
+        buttonPanel.add (filePanel);
+        buttonPanel.add(p);
+        contentPane.add (buttonPanel, BorderLayout.SOUTH);
+      
+      // adding action listener to various components
+   
+        fname1.addActionListener(this);
+        fname2.addActionListener(this);
+        fname3.addActionListener(this);
+        fname4.addActionListener(this);
+        fcase1.addActionListener(this);
+        fcase2.addActionListener(this);
+        fsize1.addActionListener(this);
+        fsize2.addActionListener(this);
+        fsize3.addActionListener(this);
+        fsize4.addActionListener(this);
+      
+        f=new Font("Courier",Font.PLAIN,15);
+        editor.setFont(f);
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic(KeyEvent.VK_F);
+        frame.pack();
+        frame.setVisible(true);
+        editor.requestFocusInWindow();
+    }
+ 
+ 
+    // This method deals with different functions when different buttons are clicked.
+    
+    public void actionPerformed(ActionEvent event) {
+  
+        command=(String)event.getActionCommand();
+        if (command.equals("Search")){
+            try {
+                search();
+            } catch (BadLocationException e) {
+          
+                e.printStackTrace();
+            }
+        }
+        else if (command.equals("Replace all")) {
+            replaceAll();
+        }
+        else if (command.equals("Replace selection")){
+            replaceSelection();
+        }
+        else if (command.equals("Save file")){
+            saveToFile();
+        }
+        else if (command.equals("Load file")){
+            loadFromFile();
+        }
+        else if(command.equals("Count"))
+        {String a="";
+        String b=" ";
+        int h=0;
+            String editorText=editor.getText();
+            String start=editorText.substring(editor.getSelectionStart(),editor.getSelectionEnd());
+            a=a+start.length();
+            for(int i=0;i<start.length();++i)
+            {
+                if(start.charAt(i)==' ')
+                {
+                    h++;
+                }
+          
+          
+            }
+            b=b+(h+1);
+            t.setText(" ");
+            t.append("Characters: "+a+" Words: "+b);
+            t.setCaretPosition(t.getDocument().getLength());
+      
+      
+      
+        }
+        else if(command.equals("Courier"))         //different font types
+        {                                          //replaces the whole content on the
+                                                   //editor with the specified font.
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font("Courier",Style,Size);
+            editor.setFont(f);
+            }
+        else if(command.equals("Monotype Corsiva"))    //different font types
+        {                                              //replaces the whole content on the
+                                                       //editor with the specified font.
+            
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font("Monotype Corsiva",Style,Size);
+            editor.setFont(f);
+            }
+        else if(command.equals("Monospaced"))          //different font types
+        {                                              //replaces the whole content on the
+                                                       //editor with the specified font.  
+            
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font("Monospaced",Style,Size);
+            editor.setFont(f);
+            }
+        else if(command.equals("Aerial"))              //different font types
+        {                                              //replaces the whole content on the
+                                                       //editor with the specified font.
+        
+        String Name=f.getName();
+        String Family=f.getFamily();
+        int Size=f.getSize();
+        int Style=f.getStyle();
+
+        f=new Font("Aerial",Style,Size);
+        editor.setFont(f);
+        }
+        
+        else if(command.equals("Lowercase"))        //different case
+        {
+            String editorText = editor.getText();
+      
+            // Find the substrings that appear before and after the selection
+            String start = editorText.substring (0, editor.getSelectionStart());
+            String end = editorText.substring (editor.getSelectionEnd());
+            String s=editorText.substring(editor.getSelectionStart(),editor.getSelectionEnd());
+            s=s.toLowerCase();
+            
+            // Replace the selected portion with the contents of the replace field
+            editorText = start + s + end;
+            editor.setText (editorText);
+        }
+        else if(command.equals("Uppercase"))
+        {
+            String editorText = editor.getText();
+      
+            // Find the substrings that appear before and after the selection
+            String start = editorText.substring (0, editor.getSelectionStart());
+            String end = editorText.substring (editor.getSelectionEnd());
+            String s=editorText.substring(editor.getSelectionStart(),editor.getSelectionEnd());
+            s=s.toUpperCase();
+            
+            // Replace the selected portion with the contents of the replace field
+            editorText = start + s + end;
+            editor.setText (editorText);
+      
+        }
+        else if(command.equals("12"))           //different font sizes
+        {
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font(Name,Style,12);
+            editor.setFont(f);
+        }
+
+        else if(command.equals("14"))
+        {
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font(Name,Style,14);
+            editor.setFont(f);
+        }
+        else if(command.equals("18"))
+        {
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font(Name,Style,18);
+            editor.setFont(f);
+        }
+        else if(command.equals("20"))
+        {
+            String Name=f.getName();
+            String Family=f.getFamily();
+            int Size=f.getSize();
+            int Style=f.getStyle();
+
+            f=new Font(Name,Style,20);
+            editor.setFont(f);
+        }
+        else if(command.equals("Rectangle"))               //different shapes
+        {
+      
+            JFrame frame = new JFrame("Resize Rectangle");
+            frame.add(new ResizeRectangle());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        else if(command.equals("Circle"))
+        {
+             JFrame frame = new JFrame("Resize Circle");
+             frame.add(new ResizeCircle());
+             frame.setSize(400, 400);
+             frame.setLocationRelativeTo(null);
+             frame.setVisible(true);
+        }
+        else if(command.equals("Oval"))
+        {
+            JFrame frame = new JFrame("Resize Oval");
+            frame.add(new ResizeOval());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        else if(command.equals("RoundRectangle"))
+        {
+            JFrame frame = new JFrame("Resize Rounded Recctangle");
+            frame.add(new ResizeRoundRect());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        else if(command.equals("Square"))
+        {
+      
+            JFrame frame = new JFrame("Resize Square");
+            frame.add(new ResizeSquare());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        else if(command.equals("MajorSector"))
+        {
+      
+            JFrame frame = new JFrame("Resize Major Sector");
+            frame.add(new ResizeMajorSector());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        else if(command.equals("MinorSector"))
+        {
+      
+            JFrame frame = new JFrame("Resize Minor Sector");
+            frame.add(new ResizeMinorSector());
+            frame.setSize(400, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+    
+  
+    }
+ 
+ 
+ 
+     private void saveFileAs() {
+            if(dialog.showSaveDialog(null)==JFileChooser.APPROVE_OPTION)
+                saveToFile();
+     }
+   
+    //Reads the contents of a file and display it in the text area.
+    
+    private void loadFromFile() {
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+        File loadFile = chooser.getSelectedFile();
+            try {
+                BufferedReader in = new BufferedReader (new FileReader(loadFile));
+                editor.setText("");
+                String nextLine = in.readLine();
+                while (nextLine != null) {
+                    editor.append(nextLine + "\n");
+                    nextLine = in.readLine();
+                }
+                in.close();
+            }
+            catch (IOException e) {
+                // occurs if the file cannot be read 
+                JOptionPane.showMessageDialog(null, "Could not load the file " + e.getMessage());
+            }
+        }
+
+    }
+    private static Action findAction(Action actions[], String key) {
+        Hashtable<Object, Action> commands = new Hashtable<Object, Action>();
+        for (int i = 0; i < actions.length; i++) {
+          Action action = actions[i];
+          commands.put(action.getValue(Action.NAME), action);
+        }
+        return commands.get(key);
+      }
+
+     // Save the contents of the editing area to a the file .
+    private void saveToFile() {
+        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File saveFile = chooser.getSelectedFile();
+            try {
+                PrintWriter out = new PrintWriter (new FileWriter(saveFile));
+                out.print (editor.getText());
+                out.close();
+            }
+            catch (IOException e) {
+             // occurs if the file cannot be written to a file
+                JOptionPane.showMessageDialog(null, "Could not save the file " + e.getMessage());
+            }
+        }
+    }
+
+     //Replace all occurrences of a string with another string.  Does nothing if oldString is empty.
+     //Write the string in the replace field that we want to get replaced with 
+     // Then select the string on the editor that we want to replace all occurrences of it.
+    
+    private void replaceAll() {
+          
+            String editorText = editor.getText();
+            String f=replaceField.getText();
+            String startt = editorText.substring (editor.getSelectionStart(),editor.getSelectionEnd());
+            editorText=editorText.replaceAll(startt,f);
+            editor.setText(editorText);
+ 
+  
+    }
+   
+     /*Replace the selected text in the editing area with the text the user entered in the replace field.
+     User must first write the word in the replace field that he wants to replace with 
+     and then select the word to be replaced on the editor.
+     This method works well if we want to replace a particular occurrence of the word 
+     among multiple same words. For ex. if there are five occurrences of word "the" in the file
+     and we want to replace the third "the", then this method works in that case also
+     */
+   
+    private void replaceSelection() {
+        // Get the text out of the editing area
+        String editorText = editor.getText();
+  
+        // Find the substrings that appear before and after the selection
+        String start = editorText.substring (0, editor.getSelectionStart());
+        String end = editorText.substring (editor.getSelectionEnd());
+  
+        // Replace the selected portion with the contents of the replace field
+        editorText = start + replaceField.getText() + end;
+        editor.setText (editorText);
+    }
+
+    /*
+     * Finds the first occurrence of the string entered in the search field.  The setting is "case sensitive"
+     * Write the string to be searched in the replaceField and it highlights the first occurrence of the string.
+     */
+    private void search() throws BadLocationException {
+ 
+        String replaceText = replaceField.getText();
+        int i=0;
+        String editorText = editor.getText();
+        String f=editorText;
+        String l="";
+        i=editorText.indexOf(replaceText);
+        l=l+f.charAt(i);
+        f.replaceFirst(l,"0");
+        int j=replaceText.length();
+        final Highlighter hilit;
+        final Highlighter.HighlightPainter painter;
+        final Color entryBg = replaceField.getBackground();
+        hilit = new DefaultHighlighter();
+        painter = new DefaultHighlighter.DefaultHighlightPainter(HILIT_COLOR);
+        editor.setHighlighter(hilit);
+        hilit.addHighlight(i, i+j, painter);
+        editor.setCaretPosition(i+j);
+        replaceField.setBackground(entryBg);
+  
+  
+    }
+ 
+       
+
+
+
+    public static void main (String[] args) throws UnsupportedLookAndFeelException {
+        UIManager.put("TextPane.font",
+        new Font(DEFAULT_FONT_FAMILY, Font.PLAIN, DEFAULT_FONT_SIZE));
+        UIManager.setLookAndFeel(new NimbusLookAndFeel());
+        SwingUtilities.invokeLater(new Runnable() {
+        public void run() {
+      
+                new Editorr();
+            }
+        });
+ 
+    }
+
+ 
+
+//shapes
+ 
+ 
+     class ResizeCircle extends JPanel {
+          private int SIZE = 8;
+          //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+          
+          private Rectangle2D[] points = { new Rectangle2D.Double(50, 50,SIZE, SIZE),
+                                           new Rectangle2D.Double(150, 150,SIZE, SIZE),
+                                           new Rectangle2D.Double(100, 100,SIZE, SIZE)};
+          Ellipse2D s = new Ellipse2D.Double();
+
+          ShapeResize ada = new ShapeResize();
+
+          public ResizeCircle() {
+          
+      
+            addMouseListener(ada);
+            addMouseMotionListener(ada);
+       
+          }
+
+          public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            for (int i = 0; i < points.length; i++) {
+              g2.fill(points[i]);
+            }
+                s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+                Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+                Math.abs(points[1].getCenterY()- points[0].getCenterY()));
+            g2.draw(s);
+          }
+
+          class ShapeResize extends MouseAdapter {      //resizes the shape
+
+            private Point2D[] last = new Point2D[3];
+            private int pos = -1;
+            public void mousePressed(MouseEvent event) {
+              Point p = event.getPoint();
+
+              for (int i = 0; i < points.length; i++) {
+                if (points[i].contains(p)) {
+                  pos = i;
+                  for(int j = 0; j < 3; j++){
+                      last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                  }
+                  return;
+                }
+              }
+            }
+
+            public void mouseReleased(MouseEvent event) {
+              pos = -1;
+            }
+
+            public void mouseDragged(MouseEvent event) {
+              if (pos == -1)
+                return;
+              if(pos != 2){
+                  points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                      points[pos].getHeight());
+                  int end = (pos==1)?2:1;
+                  double pointX = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                  double pointY = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                  points[2].setRect(pointX, pointY, points[2].getWidth(), points[2].getHeight());
+              }
+              else{
+                  Double X = event.getPoint().x - last[2].getX();
+                  Double Y = event.getPoint().y - last[2].getY();
+                  for(int j = 0; j < 3; j++)
+                      points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                          points[j].getHeight());
+
+              }
+              repaint();
+            }
+          }
+
+      
+    }
+ 
+ 
+ 
+ 
+ 
+     class ResizeRectangle extends JPanel {
+          private int SIZE = 8;
+        //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+          private Rectangle2D[] points = { new Rectangle2D.Double(50, 50,SIZE, SIZE),
+                                           new Rectangle2D.Double(150, 100,SIZE, SIZE),
+                                           new Rectangle2D.Double(100, 75,SIZE, SIZE)};
+          Rectangle2D s = new Rectangle2D.Double();
+
+          ShapeResize ada = new ShapeResize();
+
+          public ResizeRectangle() {
+            addMouseListener(ada);
+            addMouseMotionListener(ada);
+          }
+
+          public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            for (int i = 0; i < points.length; i++) {
+              g2.fill(points[i]);
+            }
+                s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+                Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+                Math.abs(points[1].getCenterY()-points[0].getCenterY()));
+            g2.draw(s);
+          }
+
+          class ShapeResize extends MouseAdapter {    //resizes the shape
+
+            private Point2D[] last = new Point2D[3];
+            private int pos = -1;
+            public void mousePressed(MouseEvent event) {
+              Point p = event.getPoint();
+
+              for (int i = 0; i < points.length; i++) {
+                if (points[i].contains(p)) {
+                  pos = i;
+                  for(int j = 0; j < 3; j++){
+                      last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                  }
+                  return;
+                }
+              }
+            }
+
+            public void mouseReleased(MouseEvent event) {
+              pos = -1;
+            }
+
+            public void mouseDragged(MouseEvent event) {
+              if (pos == -1)
+                return;
+              if(pos != 2){
+                  points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                      points[pos].getHeight());
+                  int end = (pos==1)?2:1;
+                  double pointX = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                  double pointY = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                  points[2].setRect(pointX, pointY, points[2].getWidth(), points[2].getHeight());
+              }
+              else{
+                  Double X = event.getPoint().x - last[2].getX();
+                  Double Y = event.getPoint().y - last[2].getY();
+                  for(int j = 0; j < 3; j++)
+                      points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                          points[j].getHeight());
+
+              }
+              repaint();
+            }
+          }
+
+      
+        }
+ 
+     class ResizeOval extends JPanel {
+          private int SIZE = 8;
+        //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+          private Rectangle2D[] points = { new Rectangle2D.Double(150, 150,SIZE, SIZE),
+                                           new Rectangle2D.Double(300, 200,SIZE, SIZE),
+                                           new Rectangle2D.Double(1000, 750,SIZE, SIZE)};
+          Ellipse2D s=new Ellipse2D.Double();
+
+          ShapeResize ada = new ShapeResize();
+
+          public ResizeOval() {
+            addMouseListener(ada);
+            addMouseMotionListener(ada);
+          }
+
+          public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            for (int i = 0; i < points.length; i++) {
+              g2.fill(points[i]);
+            }
+                s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+                Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+                Math.abs(points[1].getCenterY()-points[0].getCenterY()));
+            g2.draw(s);
+          }
+
+          class ShapeResize extends MouseAdapter {       //resizes the shape
+
+            private Point2D[] last = new Point2D[3];
+            private int pos = -1;
+            public void mousePressed(MouseEvent event) {
+              Point p = event.getPoint();
+
+              for (int i = 0; i < points.length; i++) {
+                if (points[i].contains(p)) {
+                  pos = i;
+                  for(int j = 0; j < 3; j++){
+                      last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                  }
+                  return;
+                }
+              }
+            }
+
+            public void mouseReleased(MouseEvent event) {
+              pos = -1;
+            }
+
+            public void mouseDragged(MouseEvent event) {
+              if (pos == -1)
+                return;
+              if(pos != 2){
+                  points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                      points[pos].getHeight());
+                  int end = (pos==1)?2:1;
+                  double PointX = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                  double PointY = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                  points[2].setRect(PointX, PointY, points[2].getWidth(), points[2].getHeight());
+              }
+              else{
+                  Double X = event.getPoint().x - last[2].getX();
+                  Double Y = event.getPoint().y - last[2].getY();
+                  for(int j = 0; j < 3; j++)
+                      points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                          points[j].getHeight());
+
+              }
+              repaint();
+            }
+          }
+    }
+     class ResizeRoundRect extends JPanel {
+         private int SIZE = 8;
+       //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+         private Rectangle2D[] points = { new Rectangle2D.Double(50, 50,SIZE, SIZE),
+                                          new Rectangle2D.Double(300, 200,SIZE, SIZE),
+                                          new Rectangle2D.Double(175, 125,SIZE, SIZE)};
+         RoundRectangle2D s = new RoundRectangle2D.Double();
+
+         ShapeResize ada = new ShapeResize();
+
+         public ResizeRoundRect() {
+           addMouseListener(ada);
+           addMouseMotionListener(ada);
+         }
+
+         public void paintComponent(Graphics g) {
+           super.paintComponent(g);
+
+           Graphics2D g2 = (Graphics2D) g;
+
+           for (int i = 0; i < points.length; i++) {
+             g2.fill(points[i]);
+           }
+               s.setRoundRect(points[0].getCenterX(), points[0].getCenterY(),
+               Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+               Math.abs(points[1].getCenterY()-points[0].getCenterY()),50.0,50.0);
+           g2.draw(s);
+         }
+
+         class ShapeResize extends MouseAdapter {         //resizes the shape
+
+           private Point2D[] last = new Point2D[3];
+           private int pos = -1;
+           public void mousePressed(MouseEvent event) {
+             Point p = event.getPoint();
+
+             for (int i = 0; i < points.length; i++) {
+               if (points[i].contains(p)) {
+                 pos = i;
+                 for(int j = 0; j < 3; j++){
+                     last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                 }
+                 return;
+               }
+             }
+           }
+
+           public void mouseReleased(MouseEvent event) {
+             pos = -1;
+           }
+
+           public void mouseDragged(MouseEvent event) {
+             if (pos == -1)
+               return;
+             if(pos != 2){
+                 points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                     points[pos].getHeight());
+                 int end = (pos==1)?2:1;
+                 double pointX = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                 double pointY = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                 points[2].setRect(pointX, pointY, points[2].getWidth(), points[2].getHeight());
+             }
+             else{
+                 Double X = event.getPoint().x - last[2].getX();
+                 Double Y = event.getPoint().y - last[2].getY();
+                 for(int j = 0; j < 3; j++)
+                     points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                         points[j].getHeight());
+
+             }
+             repaint();
+           }
+         }
+    }
+     class ResizeSquare extends JPanel {
+        private int SIZE = 8;
+      //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+        private Rectangle2D[] points = { new Rectangle2D.Double(100, 100,SIZE, SIZE),
+                                         new Rectangle2D.Double(300, 300,SIZE, SIZE),
+                                         new Rectangle2D.Double(200, 200,SIZE, SIZE)};
+        Rectangle2D s = new Rectangle2D.Double();
+
+        ShapeResize ada = new ShapeResize();
+
+        public ResizeSquare() {
+          addMouseListener(ada);
+          addMouseMotionListener(ada);
+        }
+
+        public void paintComponent(Graphics g) {
+          super.paintComponent(g);
+
+          Graphics2D g2 = (Graphics2D) g;
+
+          for (int i = 0; i < points.length; i++) {
+            g2.fill(points[i]);
+          }
+              s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+              Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+              Math.abs(points[1].getCenterY()-points[0].getCenterY()));
+          g2.draw(s);
+        }
+
+        class ShapeResize extends MouseAdapter {     //resizes the shape
+ 
+          private Point2D[] last = new Point2D[3];
+          private int pos = -1;
+          public void mousePressed(MouseEvent event) {
+            Point p = event.getPoint();
+
+            for (int i = 0; i < points.length; i++) {
+              if (points[i].contains(p)) {
+                pos = i;
+                for(int j = 0; j < 3; j++){
+                    last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                }
+                return;
+              }
+            }
+          }
+
+          public void mouseReleased(MouseEvent event) {
+            pos = -1;
+          }
+
+          public void mouseDragged(MouseEvent event) {
+            if (pos == -1)
+              return;
+            if(pos != 2){
+                points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                    points[pos].getHeight());
+                int end = (pos==1)?2:1;
+                double pointX = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                double pointY = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                points[2].setRect(pointX, pointY, points[2].getWidth(), points[2].getHeight());
+            }
+            else{
+                Double X = event.getPoint().x - last[2].getX();
+                Double Y = event.getPoint().y - last[2].getY();
+                for(int j = 0; j < 3; j++)
+                    points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                        points[j].getHeight());
+
+            }
+            repaint();
+          }
+        }
+   }
+     class ResizeMajorSector extends JPanel {
+         private int SIZE = 8;
+       //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+         private Rectangle2D[] points = { new Rectangle2D.Double(40, 40,SIZE, SIZE),
+                                          new Rectangle2D.Double(150, 150,SIZE, SIZE),
+                                          new Rectangle2D.Double(95, 95,SIZE, SIZE)};
+         Arc2D s = new Arc2D.Float(Arc2D.PIE);
+
+         ShapeResize ada = new ShapeResize();
+
+         public ResizeMajorSector() {
+           addMouseListener(ada);
+           addMouseMotionListener(ada);
+         }
+
+         public void paintComponent(Graphics g) {
+           super.paintComponent(g);
+
+           Graphics2D g2 = (Graphics2D) g;
+
+           for (int i = 0; i < points.length; i++) {
+             g2.fill(points[i]);
+           }
+               s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+               Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+               Math.abs(points[1].getCenterY()-points[0].getCenterY()));
+               s.setAngleStart(60);
+               s.setAngleExtent(245);
+               g2.draw(s);
+         }
+
+         class ShapeResize extends MouseAdapter {          //resizes the shape
+
+           private Point2D[] last = new Point2D[3];
+           private int pos = -1;
+           public void mousePressed(MouseEvent event) {
+             Point p = event.getPoint();
+
+             for (int i = 0; i < points.length; i++) {
+               if (points[i].contains(p)) {
+                 pos = i;
+                 for(int j = 0; j < 3; j++){
+                     last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                 }
+                 return;
+               }
+             }
+           }
+
+           public void mouseReleased(MouseEvent event) {
+             pos = -1;
+           }
+
+           public void mouseDragged(MouseEvent event) {
+             if (pos == -1)
+               return;
+             if(pos != 2){
+                 points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                     points[pos].getHeight());
+                 int end = (pos==1)?2:1;
+                 double newPoint2X = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                 double newPoint2Y = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                 points[2].setRect(newPoint2X, newPoint2Y, points[2].getWidth(), points[2].getHeight());
+             }
+            else{
+                 Double X = event.getPoint().x - last[2].getX();
+                 Double Y = event.getPoint().y - last[2].getY();
+                 for(int j = 0; j < 3; j++)
+                     points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                         points[j].getHeight());
+
+             }
+             repaint();
+           }
+         }
+    }
+    class ResizeMinorSector extends JPanel {
+        private int SIZE = 8;
+      //There are 3 points. First and the second point denote the top-left and bottom right of the shape.
+        private Rectangle2D[] points = { new Rectangle2D.Double(40, 40,SIZE, SIZE),
+                                         new Rectangle2D.Double(150, 150,SIZE, SIZE),
+                                         new Rectangle2D.Double(95, 95,SIZE, SIZE)};
+        Arc2D s = new Arc2D.Float(Arc2D.PIE);
+
+        ShapeResize ada = new ShapeResize();
+
+        public ResizeMinorSector() {
+          addMouseListener(ada);
+          addMouseMotionListener(ada);
+        }
+
+        public void paintComponent(Graphics g) {
+          super.paintComponent(g);
+
+          Graphics2D g2 = (Graphics2D) g;
+
+          for (int i = 0; i < points.length; i++) {
+            g2.fill(points[i]);
+          }
+              s.setFrame(points[0].getCenterX(), points[0].getCenterY(),
+              Math.abs(points[1].getCenterX()-points[0].getCenterX()),
+              Math.abs(points[1].getCenterY()-points[0].getCenterY()));
+              s.setAngleStart(60);
+              s.setAngleExtent(-80);
+              g2.draw(s);
+        }
+
+        class ShapeResize extends MouseAdapter {          //resizes the shape
+
+          private Point2D[] last = new Point2D[3];
+          private int pos = -1;
+          public void mousePressed(MouseEvent event) {
+            Point p = event.getPoint();
+
+            for (int i = 0; i < points.length; i++) {
+              if (points[i].contains(p)) {
+                pos = i;
+                for(int j = 0; j < 3; j++){
+                    last[j] = new Point2D.Double(points[j].getX(), points[j].getY());
+                }
+                return;
+              }
+            }
+          }
+
+          public void mouseReleased(MouseEvent event) {
+            pos = -1;
+          }
+
+          public void mouseDragged(MouseEvent event) {
+            if (pos == -1)
+              return;
+            if(pos != 2){
+                points[pos].setRect(event.getPoint().x,event.getPoint().y,points[pos].getWidth(),
+                    points[pos].getHeight());
+                int end = (pos==1)?2:1;
+                double newPoint2X = points[end].getX() + (points[pos].getX() - points[end].getX())/2;
+                double newPoint2Y = points[end].getY() + (points[pos].getY() - points[end].getY())/2;
+                points[2].setRect(newPoint2X, newPoint2Y, points[2].getWidth(), points[2].getHeight());
+            }
+           else{
+                Double X = event.getPoint().x - last[2].getX();
+                Double Y = event.getPoint().y - last[2].getY();
+                for(int j = 0; j < 3; j++)
+                    points[j].setRect((last[j].getX() + X),(last[j].getY() + Y),points[j].getWidth(),
+                        points[j].getHeight());
+
+            }
+            repaint();
+          }
+        }
+   }
+}
+
